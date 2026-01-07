@@ -1,0 +1,22 @@
+{
+    "name": "electrical-load-dashboard",
+    "version": "1.0.0",
+    "description": "An electrical load dashboard for calculating power consumption",
+    "main": "dist/main.js",
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc --watch",
+        "serve": "python3 -m http.server 8000",
+        "dev": "npm run build && npm run serve"
+    },
+    "keywords": [
+        "electrical",
+        "power",
+        "calculations"
+    ],
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "typescript": "^5.3.3"
+    }
+}

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="Calculate electrical power consumption for single and three-phase systems">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Electrical Load Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h1>Electrical Load Dashboard</h1>
+            <button id="themeToggle" class="theme-toggle" title="Toggle dark mode">
+                <span class="theme-icon">🌙</span>
+            </button>
+        </header>
+
+        <div class="input-section">
+            <h2>Input Parameters</h2>
+            <p class="section-description">Enter electrical parameters to calculate power consumption</p>
+
+            <div class="input-group">
+                <label for="voltage" class="label-with-tooltip">
+                    Voltage (V)
+                    <span class="tooltip-icon"
+                        title="Electric potential difference measured in volts. Typical values: 120V (household), 240V (appliances), 480V+ (industrial)">?</span>
+                </label>
+                <input type="number" id="voltage" placeholder="Enter voltage in volts" step="0.1">
+            </div>
+
+            <div class="input-group">
+                <label for="current" class="label-with-tooltip">
+                    Current (A)
+                    <span class="tooltip-icon"
+                        title="Electric current flow measured in amperes. The rate at which electric charge flows through the circuit">?</span>
+                </label>
+                <input type="number" id="current" placeholder="Enter current in amperes" step="0.1">
+            </div>
+
+            <div class="input-group">
+                <label for="phase" class="label-with-tooltip">
+                    Phase Configuration
+                    <span class="tooltip-icon"
+                        title="Single Phase (1Ø): Residential/small loads. Three Phase (3Ø): Industrial/large loads with better power distribution">?</span>
+                </label>
+                <select id="phase">
+                    <option value="1">Single Phase (1Ø)</option>
+                    <option value="3" selected>Three Phase (3Ø)</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="powerFactor" class="label-with-tooltip">
+                    Power Factor
+                    <span class="tooltip-icon"
+                        title="Ratio of real to apparent power (0-1). 1.0 = ideal, 0.9 = typical industrial, 0.7-0.8 = motors. Higher is more efficient">?</span>
+                </label>
+                <input type="number" id="powerFactor" placeholder="Enter power factor (0.6-1.0)" min="0.5" max="1.0"
+                    step="0.01" value="0.9">
+            </div>
+
+            <div class="input-group">
+                <label for="efficiency" class="label-with-tooltip">
+                    Efficiency (%)
+                    <span class="tooltip-icon"
+                        title="System efficiency as percentage. 100% = ideal. Typical: 85-95%. Accounts for motor and equipment losses">?</span>
+                </label>
+                <input type="number" id="efficiency" placeholder="Enter efficiency percentage" min="0" max="100"
+                    step="0.1" value="100">
+            </div>
+
+            <div class="input-group">
+                <label for="electricityRate" class="label-with-tooltip">
+                    Electricity Rate ($/kWh)
+                    <span class="tooltip-icon"
+                        title="Cost per kilowatt-hour from your utility bill. Typical residential: $0.10-0.15, commercial: $0.08-0.12">?</span>
+                </label>
+                <input type="number" id="electricityRate" placeholder="Enter rate (e.g., 0.12)" min="0" max="10"
+                    step="0.01" value="0.12">
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="results-header">
+                <h2>Calculation Results</h2>
+                <button id="saveCalculation" class="btn-save" title="Save to history">
+                    💾 Save
+                </button>
+            </div>
+            <p class="section-description">Hover over values to see detailed descriptions</p>
+            <div id="results" class="results-grid">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+
+        <div class="history-section">
+            <div class="history-header">
+                <h2>Calculation History</h2>
+                <button id="clearHistory" class="btn-clear" title="Clear all history">
+                    🗑️ Clear
+                </button>
+            </div>
+            <div id="historyList" class="history-list">
+                <!-- History items will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="dist/main.js"></script>
+</body>
+
+</html>

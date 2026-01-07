@@ -1,0 +1,237 @@
+/**
+ * Electrical Load Dashboard - Main Application
+ * Handles user input, validation, and power calculations
+ */
+
+// Types for better type safety
+interface ValidationRule {
+    min: number;
+    max: number;
+    required: boolean;
+    description: string;
+}
+
+interface ValidationResult {
+    isValid: boolean;
+    errors: string[];
+}
+
+interface CalculationResult {
+    kw: number;
+    kva: number;
+    kvar: number;
+    pf: number;
+    adjustedPower: number;
+    phase: number;
+}
+
+// DOM Elements with proper typing
+const voltageInput = document.getElementById('voltage') as HTMLInputElement;
+const currentInput = document.getElementById('current') as HTMLInputElement;
+const phaseSelect = document.getElementById('phase') as HTMLSelectElement;
+const efficiencyInput = document.getElementById('efficiency') as HTMLInputElement;
+const resultsDiv = document.getElementById('results') as HTMLDivElement;
+
+// Validation constants with proper typing
+const VALIDATION_RULES: Record<string, ValidationRule> = {
+    voltage: {
+        min: 0,
+        max: 1000000, // 1 MV reasonable limit
+        required: true,
+        description: 'Voltage'
+    },
+    current: {
+        min: 0,
+        max: 100000, // 100 kA reasonable limit
+        required: true,
+        description: 'Current'
+    },
+    efficiency: {
+        min: 0,
+        max: 100,
+        required: false,
+        description: 'Efficiency'
+    }
+};
+
+/**
+ * Validate input values against defined rules
+ * @param voltage - Voltage input value
+ * @param current - Current input value
+ * @param efficiency - Efficiency input value
+ * @returns ValidationResult with status and error messages
+ */
+function validateInputs(voltage: number, current: number, efficiency: number): ValidationResult {
+    const errors: string[] = [];
+
+    // Validate voltage
+    if (isNaN(voltage) || voltage === null) {
+        errors.push(`${VALIDATION_RULES.voltage.description} is required`);
+    } else if (voltage <= VALIDATION_RULES.voltage.min) {
+        errors.push(`${VALIDATION_RULES.voltage.description} must be greater than 0`);
+    } else if (voltage > VALIDATION_RULES.voltage.max) {
+        errors.push(`${VALIDATION_RULES.voltage.description} exceeds maximum limit of ${VALIDATION_RULES.voltage.max}V`);
+    }
+
+    // Validate current
+    if (isNaN(current) || current === null) {
+        errors.push(`${VALIDATION_RULES.current.description} is required`);
+    } else if (current <= VALIDATION_RULES.current.min) {
+        errors.push(`${VALIDATION_RULES.current.description} must be greater than 0`);
+    } else if (current > VALIDATION_RULES.current.max) {
+        errors.push(`${VALIDATION_RULES.current.description} exceeds maximum limit of ${VALIDATION_RULES.current.max}A`);
+    }
+
+    // Validate efficiency
+    if (!isNaN(efficiency) && efficiency !== null) {
+        if (efficiency < VALIDATION_RULES.efficiency.min) {
+            errors.push(`${VALIDATION_RULES.efficiency.description} cannot be less than 0%`);
+        } else if (efficiency > VALIDATION_RULES.efficiency.max) {
+            errors.push(`${VALIDATION_RULES.efficiency.description} cannot exceed 100%`);
+        }
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    };
+}
+
+/**
+ * Display validation errors to the user
+ * @param errors - Array of error messages
+ */
+function displayErrors(errors: string[]): void {
+    const errorHTML = errors.map(error => `<li>${error}</li>`).join('');
+    resultsDiv.innerHTML = `
+        <div class="error-container">
+            <h3 class="error-title">⚠️ Validation Errors</h3>
+            <ul class="error-list">
+                ${errorHTML}
+            </ul>
+        </div>
+    `;
+}
+
+/**
+ * Calculate power values based on electrical parameters
+ * @param voltage - Input voltage in volts
+ * @param current - Input current in amperes
+ * @param phase - Phase configuration (1 or 3)
+ * @param efficiency - System efficiency percentage
+ * @returns CalculationResult with all calculated values
+ */
+function calculatePower(voltage: number, current: number, phase: number, efficiency: number): CalculationResult {
+    let kw: number;
+    let kva: number;
+
+    if (phase === 1) {
+        // Single phase: P = V × I
+        kw = (voltage * current) / 1000;
+        kva = (voltage * current) / 1000;
+    } else {
+        // Three phase: P = √3 × V × I
+        const sqrt3 = Math.sqrt(3);
+        kw = (sqrt3 * voltage * current) / 1000;
+        kva = (sqrt3 * voltage * current) / 1000;
+    }
+
+    // Apply efficiency
+    const adjustedPower = kw * (efficiency / 100);
+
+    // Power factor (0.9 is typical for industrial loads)
+    const pf = 0.9;
+
+    // Calculate reactive power (kVAR) from power triangle: S² = P² + Q²
+    const kvar = Math.sqrt(Math.max(0, Math.pow(kva, 2) - Math.pow(kw, 2)));
+
+    return {
+        kw,
+        kva,
+        kvar,
+        pf,
+        adjustedPower,
+        phase
+    };
+}
+
+/**
+ * Display calculation results to the user
+ * @param result - CalculationResult object with all calculated values
+ */
+function displayResults(result: CalculationResult): void {
+    resultsDiv.innerHTML = `
+        <div class="result-item" data-tooltip="Real power consumed by the load (actual work done)">
+            <span class="result-label">Real Power (kW)</span>
+            <span class="result-value">${result.kw.toFixed(2)}</span>
+        </div>
+        <div class="result-item" data-tooltip="Total power in the circuit (real + reactive components)">
+            <span class="result-label">Apparent Power (kVA)</span>
+            <span class="result-value">${result.kva.toFixed(2)}</span>
+        </div>
+        <div class="result-item" data-tooltip="Power wasted as heat in reactive components (inductors, capacitors)">
+            <span class="result-label">Reactive Power (kVAR)</span>
+            <span class="result-value">${result.kvar.toFixed(2)}</span>
+        </div>
+        <div class="result-item" data-tooltip="Ratio of real to apparent power (0-1). Higher is better. 1.0 = perfect">
+            <span class="result-label">Power Factor</span>
+            <span class="result-value">${result.pf.toFixed(2)}</span>
+        </div>
+        <div class="result-item" data-tooltip="Real power adjusted for system efficiency losses and gains">
+            <span class="result-label">Adjusted Power (kW)</span>
+            <span class="result-value">${result.adjustedPower.toFixed(2)}</span>
+        </div>
+        <div class="result-item" data-tooltip="Configuration type: Single phase for small loads, three phase for industrial">
+            <span class="result-label">Phase Configuration</span>
+            <span class="result-value">${result.phase === 1 ? 'Single (1Ø)' : 'Three (3Ø)'}</span>
+        </div>
+    `;
+}
+
+/**
+ * Main calculation function triggered on input changes
+ * Validates inputs and displays results or errors
+ */
+function updateCalculations(): void {
+    // Get input values
+    const voltage = parseFloat(voltageInput.value);
+    const current = parseFloat(currentInput.value);
+    const phase = parseInt(phaseSelect.value);
+    const efficiency = parseFloat(efficiencyInput.value) || 100;
+
+    // Validate inputs
+    const validation = validateInputs(voltage, current, efficiency);
+
+    if (!validation.isValid) {
+        displayErrors(validation.errors);
+        return;
+    }
+
+    // Calculate power values
+    const result = calculatePower(voltage, current, phase, efficiency);
+
+    // Display results
+    displayResults(result);
+}
+
+// Initialize DOM elements with event listeners
+function initializeApp(): void {
+    voltageInput.addEventListener('input', updateCalculations);
+    currentInput.addEventListener('input', updateCalculations);
+    phaseSelect.addEventListener('change', updateCalculations);
+    efficiencyInput.addEventListener('input', updateCalculations);
+
+    // Initialize with welcome message
+    resultsDiv.innerHTML = `
+        <div class="welcome-message">
+            <p>Enter voltage and current values to calculate power consumption</p>
+        </div>
+    `;
+}
+
+// Start the application when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
